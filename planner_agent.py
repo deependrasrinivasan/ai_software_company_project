@@ -2,7 +2,6 @@
 from project_state import ProjectState
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from langgraph.graph import StateGraph, START, END
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
@@ -72,16 +71,3 @@ def _planner_agent(state: ProjectState):
         "requirements": llm_call(planner_prompt)
         }
 
-
-
-builder = StateGraph(ProjectState)
-
-builder.add_node("planner_agent",_planner_agent)
-
-builder.add_edge(START , "planner_agent")
-builder.add_edge("planner_agent", END)
-
-
-graph = builder.compile()
-
-graph.invoke({"request": "Build a web application for online book reviews."})
