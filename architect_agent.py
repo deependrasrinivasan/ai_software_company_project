@@ -1,9 +1,25 @@
-from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from project_state import ProjectState
 import json
+import re
+from pathlib import Path
+
+from dotenv import load_dotenv
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from project_state import ProjectState
+
 load_dotenv()  # Load environment variables from .env file
+
+
+def save_design_doc_to_file(design_doc: str, state: ProjectState) -> str:
+    base_dir = Path(__file__).resolve().parent / "design_docs"
+    base_dir.mkdir(exist_ok=True)
+
+    request_text = state.get("request") or "design"
+    slug = re.sub(r"[^a-z0-9]+", "_", request_text.lower()).strip("_") or "design"
+    file_path = base_dir / f"{slug}_design_doc.md"
+    file_path.write_text(design_doc, encoding="utf-8")
+    return str(file_path)
 
 
 def llm_call(prompt , state: ProjectState):
@@ -18,8 +34,11 @@ def llm_call(prompt , state: ProjectState):
     )
 
     json_response = json.loads(response.text)
+    design_doc_path = save_design_doc_to_file(json_response["design_doc"], state)
+
     print("\n========== Design Document ==========\n")
     print(json_response["design_doc"])
+    print(f"\nSaved design document to: {design_doc_path}")
 
     print("\n========== Tech Stack ==========\n")
     print(json_response["tech_stack"])
