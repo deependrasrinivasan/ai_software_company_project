@@ -7,8 +7,8 @@ class ProjectState(TypedDict, total=False):
     design_doc: str
     tech_stack: str
  
-    backend_code: str
-    frontend_code: str
+    backend_code: list[dict]
+    frontend_code: list[dict]
  
     test_results: str
     bug_reports: List[str]
