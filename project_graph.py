@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from architect_agent import _architect_agent
-from developer_agent import _developer_agent
+from developer_agent.developer_agent import _developer_agent
 from project_state import ProjectState
 from planner_agent import _planner_agent
 
