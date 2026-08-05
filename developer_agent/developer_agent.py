@@ -1,15 +1,39 @@
-from pathlib import Path
-from langchain_core.tools import tool
-import re
 import json
-from project_state import ProjectState
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
+import re
+import shutil
+from pathlib import Path
 
 from dotenv import load_dotenv
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from project_state import ProjectState
+
 load_dotenv()  # Load environment variables from .env file
 
 from developer_agent.developer_tools import create_project_directory, read_directory_tree, create_file, create_directory_tree
+
+
+def create_project_zip(workspace_path: str, output_zip_path: str | None = None) -> str:
+    """Create a zip archive for the generated project workspace."""
+    workspace = Path(workspace_path).resolve()
+    if not workspace.exists():
+        raise FileNotFoundError(f"Workspace not found: {workspace}")
+
+    if output_zip_path is None:
+        output_zip_path = str(workspace.parent / f"{workspace.name}.zip")
+
+    target = Path(output_zip_path).resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    archive_root = str(workspace.parent)
+    archive_base = workspace.name
+    shutil.make_archive(str(target.with_suffix("")), "zip", root_dir=archive_root, base_dir=archive_base)
+
+    return str(target.with_suffix(".zip"))
+
+
 # CHANGE 1: tool lookup so tool calls can actually be executed by name
 TOOL_MAP = {
     "create_project_directory": create_project_directory,
@@ -90,6 +114,14 @@ def llm_call(prompt, state: ProjectState):
         json_response["frontend_files"] = [{"path": p, "purpose": "", "depends_on": []} for p in frontend_files]
 
     json_response["workspace_path"] = workspace_path or json_response.get("workspace_path")
+
+    if json_response.get("workspace_path"):
+        try:
+            zip_path = create_project_zip(json_response["workspace_path"])
+            json_response["zip_path"] = zip_path
+            print(f"\nCreated archive: {zip_path}\n")
+        except Exception as exc:
+            json_response["zip_error"] = str(exc)
 
     print("\n========== front end ==========\n")
     print(json_response["frontend_files"])
